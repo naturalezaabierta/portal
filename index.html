@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal de Afiliados · Naturaleza Abierta</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --verde-oscuro:#1f3d2b;
+    --verde:#2f6b3f;
+    --verde-claro:#e8f3ea;
+    --verde-acento:#3f9553;
+    --texto:#20291f;
+    --texto-suave:#5b6a5c;
+    --borde:#dbe6dc;
+    --blanco:#ffffff;
+    --alerta:#c0392b;
+    --sombra: 0 8px 24px rgba(31,61,43,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Plus Jakarta Sans', sans-serif;
+    background:var(--verde-claro);
+    color:var(--texto);
+    min-height:100vh;
+  }
+  .oculto{display:none !important;}
+
+  /* ---------- LOGIN / REGISTRO ---------- */
+  #pantalla-auth{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .tarjeta-auth{
+    background:var(--blanco);
+    border-radius:20px;
+    box-shadow:var(--sombra);
+    padding:36px 32px;
+    width:100%;
+    max-width:400px;
+    text-align:center;
+  }
+  .tarjeta-auth img{
+    width:76px;
+    margin-bottom:6px;
+  }
+  .tarjeta-auth h1{
+    font-size:20px;
+    font-weight:800;
+    color:var(--verde-oscuro);
+    margin:4px 0 2px;
+  }
+  .tarjeta-auth p.subtitulo{
+    color:var(--texto-suave);
+    font-size:13.5px;
+    margin:0 0 22px;
+  }
+  .tabs{
+    display:flex;
+    background:var(--verde-claro);
+    border-radius:12px;
+    padding:4px;
+    margin-bottom:22px;
+  }
+  .tabs button{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:9px 0;
+    border-radius:9px;
+    font-family:inherit;
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--texto-suave);
+    cursor:pointer;
+    transition:.15s;
+  }
+  .tabs button.activo{
+    background:var(--verde);
+    color:#fff;
+  }
+  form.form-auth{ text-align:left; }
+  .campo{ margin-bottom:14px; }
+  .campo label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--texto-suave);
+    margin-bottom:5px;
+  }
+  .campo input{
+    width:100%;
+    padding:11px 12px;
+    border-radius:10px;
+    border:1.5px solid var(--borde);
+    font-family:inherit;
+    font-size:14px;
+    outline:none;
+    transition:.15s;
+  }
+  .campo input:focus{ border-color:var(--verde-acento); }
+  .btn-principal{
+    width:100%;
+    background:var(--verde);
+    color:#fff;
+    border:none;
+    padding:12px;
+    border-radius:10px;
+    font-family:inherit;
+    font-weight:700;
+    font-size:14.5px;
+    cursor:pointer;
+    margin-top:4px;
+    transition:.15s;
+  }
+  .btn-principal:hover{ background:var(--verde-oscuro); }
+  .btn-principal:disabled{ opacity:.6; cursor:not-allowed; }
+  .mensaje{
+    font-size:13px;
+    margin-top:14px;
+    padding:10px 12px;
+    border-radius:9px;
+    text-align:left;
+  }
+  .mensaje.error{ background:#fbeaea; color:var(--alerta); }
+  .mensaje.ok{ background:var(--verde-claro); color:var(--verde-oscuro); }
+
+  /* ---------- APP ---------- */
+  #app{ min-height:100vh; }
+  header.topbar{
+    background:var(--blanco);
+    border-bottom:1px solid var(--borde);
+    padding:14px 22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .marca{ display:flex; align-items:center; gap:10px; }
+  .marca img{ width:34px; }
+  .marca span{ font-weight:800; color:var(--verde-oscuro); font-size:15px; }
+  .btn-salir{
+    background:transparent;
+    border:1.5px solid var(--borde);
+    color:var(--texto-suave);
+    padding:8px 14px;
+    border-radius:9px;
+    font-family:inherit;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  main{ max-width:920px; margin:0 auto; padding:24px 18px 60px; }
+
+  .resumen-header{
+    background:linear-gradient(135deg, var(--verde-oscuro), var(--verde));
+    border-radius:18px;
+    padding:26px 24px;
+    color:#fff;
+    margin-bottom:20px;
+  }
+  .resumen-header .nombre{ font-size:14px; opacity:.85; }
+  .resumen-header .codigo{ font-size:13px; opacity:.75; margin-top:2px; }
+  .cifras{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-top:18px;
+  }
+  .cifra{
+    background:rgba(255,255,255,0.12);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .cifra .etiqueta{ font-size:12px; opacity:.85; }
+  .cifra .valor{ font-size:22px; font-weight:800; margin-top:2px; }
+
+  .accesos{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:22px;
+  }
+  .acceso{
+    background:var(--blanco);
+    border:1.5px solid var(--borde);
+    border-radius:14px;
+    padding:16px;
+    text-decoration:none;
+    color:var(--texto);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    transition:.15s;
+  }
+  .acceso:hover{ border-color:var(--verde-acento); box-shadow:var(--sombra); }
+  .acceso .icono{
+    width:38px; height:38px;
+    border-radius:10px;
+    background:var(--verde-claro);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px;
+    flex-shrink:0;
+  }
+  .acceso .titulo{ font-weight:700; font-size:14px; }
+  .acceso .sub{ font-size:12px; color:var(--texto-suave); }
+
+  .tabs-secundarias{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+    border-bottom:1.5px solid var(--borde);
+  }
+  .tabs-secundarias button{
+    background:none;
+    border:none;
+    font-family:inherit;
+    font-weight:700;
+    font-size:14px;
+    color:var(--texto-suave);
+    padding:10px 4px;
+    cursor:pointer;
+    border-bottom:2.5px solid transparent;
+    margin-bottom:-1.5px;
+  }
+  .tabs-secundarias button.activo{
+    color:var(--verde-oscuro);
+    border-color:var(--verde);
+  }
+
+  .panel{ background:var(--blanco); border-radius:16px; padding:18px; box-shadow:var(--sombra); }
+
+  table.tabla-pagos{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.tabla-pagos th{
+    text-align:left;
+    color:var(--texto-suave);
+    font-size:12px;
+    font-weight:700;
+    padding:8px 6px;
+    border-bottom:1.5px solid var(--borde);
+  }
+  table.tabla-pagos td{
+    padding:10px 6px;
+    border-bottom:1px solid var(--borde);
+  }
+  .estado-pago{
+    display:inline-block;
+    padding:3px 9px;
+    border-radius:20px;
+    font-size:11.5px;
+    font-weight:700;
+    background:var(--verde-claro);
+    color:var(--verde-oscuro);
+  }
+  .vacio{ text-align:center; color:var(--texto-suave); font-size:13.5px; padding:30px 10px; }
+
+  /* Árbol */
+  .nodo-raiz{
+    background:var(--verde-claro);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .nodo-raiz .nombre{ font-weight:800; color:var(--verde-oscuro); }
+  .nodo-raiz .detalle{ font-size:12.5px; color:var(--texto-suave); margin-top:2px; }
+
+  ul.arbol, ul.arbol ul{ list-style:none; margin:0; padding-left:0; }
+  ul.arbol ul{ padding-left:18px; border-left:2px dashed var(--borde); margin-top:6px; }
+  ul.arbol li{ margin-bottom:8px; }
+  .fila-nodo{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--blanco);
+    border:1.3px solid var(--borde);
+    border-radius:10px;
+    padding:9px 12px;
+    font-size:13.5px;
+  }
+  .fila-nodo .izq{ display:flex; align-items:center; gap:8px; }
+  .btn-expandir{
+    border:none;
+    background:var(--verde-claro);
+    color:var(--verde-oscuro);
+    width:24px; height:24px;
+    border-radius:7px;
+    font-weight:800;
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+  }
+  .btn-expandir:disabled{ opacity:.4; cursor:default; }
+  .punto-compra{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--verde-acento);
+    flex-shrink:0;
+  }
+  .punto-compra.no{ background:#d7d7d7; }
+  .monto-nodo{ font-weight:700; color:var(--verde-oscuro); white-space:nowrap; }
+  .cargando-mini{ font-size:12.5px; color:var(--texto-suave); padding:6px 4px; }
+</style>
+</head>
+<body>
+
+<!-- ============ PANTALLA LOGIN / REGISTRO ============ -->
+<div id="pantalla-auth">
+  <div class="tarjeta-auth">
+    <img src="https://www.naturalezaabierta.com/wp-content/uploads/2026/03/cropped-cropped-solo-logo-WEB2.png" alt="Naturaleza Abierta">
+    <h1>Portal de Afiliados</h1>
+    <p class="subtitulo">Naturaleza Abierta</p>
+
+    <div class="tabs">
+      <button id="tab-login" class="activo" onclick="cambiarTab('login')">Iniciar sesión</button>
+      <button id="tab-registro" onclick="cambiarTab('registro')">Activar mi cuenta</button>
+    </div>
+
+    <!-- LOGIN -->
+    <form id="form-login" class="form-auth" onsubmit="return manejarLogin(event)">
+      <div class="campo">
+        <label>Correo</label>
+        <input type="email" id="login-correo" required placeholder="tucorreo@ejemplo.com">
+      </div>
+      <div class="campo">
+        <label>Contraseña</label>
+        <input type="password" id="login-clave" required placeholder="••••••••">
+      </div>
+      <button class="btn-principal" type="submit" id="btn-login">Entrar</button>
+    </form>
+
+    <!-- REGISTRO -->
+    <form id="form-registro" class="form-auth oculto" onsubmit="return manejarRegistro(event)">
+      <div class="campo">
+        <label>Teléfono con el que compraste (con código de país, ej: 584121234567)</label>
+        <input type="text" id="reg-telefono" required placeholder="584121234567">
+      </div>
+      <div class="campo">
+        <label>Correo</label>
+        <input type="email" id="reg-correo" required placeholder="tucorreo@ejemplo.com">
+      </div>
+      <div class="campo">
+        <label>Crea una contraseña</label>
+        <input type="password" id="reg-clave" required minlength="6" placeholder="Mínimo 6 caracteres">
+      </div>
+      <button class="btn-principal" type="submit" id="btn-registro">Activar mi cuenta</button>
+    </form>
+
+    <div id="mensaje-auth"></div>
+  </div>
+</div>
+
+<!-- ============ APP (POST-LOGIN) ============ -->
+<div id="app" class="oculto">
+  <header class="topbar">
+    <div class="marca">
+      <img src="https://www.naturalezaabierta.com/wp-content/uploads/2026/03/cropped-cropped-solo-logo-WEB2.png" alt="">
+      <span>Naturaleza Abierta</span>
+    </div>
+    <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main>
+    <div class="resumen-header">
+      <div class="nombre" id="r-nombre">Hola,</div>
+      <div class="codigo" id="r-codigo">Código: —</div>
+      <div class="cifras">
+        <div class="cifra">
+          <div class="etiqueta">Acumulado para tu próximo pago</div>
+          <div class="valor" id="r-saldo">$0.00</div>
+        </div>
+        <div class="cifra">
+          <div class="etiqueta">Ventas generadas en total</div>
+          <div class="valor" id="r-ventas">$0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accesos">
+      <a class="acceso" id="link-catalogo" target="_blank" rel="noopener">
+        <div class="icono">🛍️</div>
+        <div>
+          <div class="titulo">Mi catálogo</div>
+          <div class="sub">Compártelo, ya trae tu código</div>
+        </div>
+      </a>
+      <a class="acceso" id="link-creativos" target="_blank" rel="noopener">
+        <div class="icono">🎨</div>
+        <div>
+          <div class="titulo">Mis creativos</div>
+          <div class="sub">Imágenes listas para tus redes</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="tabs-secundarias">
+      <button id="tab-pagos" class="activo" onclick="cambiarSeccion('pagos')">Historial de pagos</button>
+      <button id="tab-arbol" onclick="cambiarSeccion('arbol')">Mi red (árbol genealógico)</button>
+    </div>
+
+    <!-- SECCIÓN PAGOS -->
+    <div id="seccion-pagos" class="panel">
+      <table class="tabla-pagos" id="tabla-pagos">
+        <thead>
+          <tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Referencia</th><th>Estado</th></tr>
+        </thead>
+        <tbody id="cuerpo-pagos"></tbody>
+      </table>
+      <div id="pagos-vacio" class="vacio oculto">Todavía no tienes pagos registrados.</div>
+    </div>
+
+    <!-- SECCIÓN ÁRBOL -->
+    <div id="seccion-arbol" class="panel oculto">
+      <div class="nodo-raiz">
+        <div class="nombre" id="arbol-raiz-nombre">Tú</div>
+        <div class="detalle">Toca el + para ver los referidos de cada persona</div>
+      </div>
+      <ul class="arbol" id="arbol-raiz"></ul>
+    </div>
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = "https://tgvcvnhrwswuxgjbpvwq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_EKV8OM1y96u-DV_kUPGwkg_BZuGdf4D";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let afiliadoActual = null; // { afiliado_id, usuario_id (root), codigo_propio, ... }
+
+/* ---------- TABS AUTH ---------- */
+function cambiarTab(tab){
+  document.getElementById('tab-login').classList.toggle('activo', tab==='login');
+  document.getElementById('tab-registro').classList.toggle('activo', tab==='registro');
+  document.getElementById('form-login').classList.toggle('oculto', tab!=='login');
+  document.getElementById('form-registro').classList.toggle('oculto', tab!=='registro');
+  document.getElementById('mensaje-auth').innerHTML = '';
+}
+
+function mostrarMensajeAuth(texto, tipo){
+  document.getElementById('mensaje-auth').innerHTML =
+    `<div class="mensaje ${tipo}">${texto}</div>`;
+}
+
+/* ---------- LOGIN ---------- */
+async function manejarLogin(e){
+  e.preventDefault();
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  const correo = document.getElementById('login-correo').value.trim();
+  const clave = document.getElementById('login-clave').value;
+
+  const { error } = await sb.auth.signInWithPassword({ email: correo, password: clave });
+  btn.disabled = false; btn.textContent = 'Entrar';
+
+  if (error){
+    mostrarMensajeAuth('Correo o contraseña incorrectos.', 'error');
+    return false;
+  }
+  await iniciarApp();
+  return false;
+}
+
+/* ---------- REGISTRO ---------- */
+async function manejarRegistro(e){
+  e.preventDefault();
+  const btn = document.getElementById('btn-registro');
+  btn.disabled = true; btn.textContent = 'Activando...';
+
+  const telefono = document.getElementById('reg-telefono').value.trim();
+  const correo = document.getElementById('reg-correo').value.trim();
+  const clave = document.getElementById('reg-clave').value;
+
+  const { error: errorSignup } = await sb.auth.signUp({ email: correo, password: clave });
+  if (errorSignup){
+    btn.disabled = false; btn.textContent = 'Activar mi cuenta';
+    mostrarMensajeAuth(errorSignup.message.includes('registered') ?
+      'Ese correo ya tiene una cuenta. Intenta iniciar sesión.' :
+      'No se pudo crear la cuenta: ' + errorSignup.message, 'error');
+    return false;
+  }
+
+  // Ya autenticado tras el signUp -> vincular con su registro existente por teléfono
+  const { data, error: errorRpc } = await sb.rpc('vincular_afiliado_portal', {
+    p_telefono: telefono, p_correo: correo
+  });
+
+  btn.disabled = false; btn.textContent = 'Activar mi cuenta';
+
+  const resultado = Array.isArray(data) ? data[0] : data;
+  if (errorRpc || !resultado || !resultado.ok){
+    mostrarMensajeAuth(resultado ? resultado.mensaje : 'No se pudo vincular tu cuenta. Verifica el teléfono.', 'error');
+    return false;
+  }
+
+  mostrarMensajeAuth('¡Cuenta activada! Entrando...', 'ok');
+  setTimeout(() => iniciarApp(), 900);
+  return false;
+}
+
+function cerrarSesion(){
+  sb.auth.signOut().then(() => location.reload());
+}
+
+/* ---------- INICIAR APP ---------- */
+async function iniciarApp(){
+  const { data: resumenData, error } = await sb.rpc('obtener_resumen_afiliado');
+  const resumen = Array.isArray(resumenData) ? resumenData[0] : resumenData;
+
+  if (error || !resumen){
+    mostrarMensajeAuth('Tu cuenta no está vinculada a ningún afiliado todavía.', 'error');
+    await sb.auth.signOut();
+    return;
+  }
+
+  afiliadoActual = resumen;
+
+  document.getElementById('pantalla-auth').classList.add('oculto');
+  document.getElementById('app').classList.remove('oculto');
+
+  document.getElementById('r-nombre').textContent = `Hola, ${resumen.nombre} ${resumen.apellido||''}`;
+  document.getElementById('r-codigo').textContent = `Código: ${resumen.codigo_propio}`;
+  document.getElementById('r-saldo').textContent = formatoMoneda(resumen.saldo_acumulado);
+  document.getElementById('r-ventas').textContent = formatoMoneda(resumen.ventas_referidas_totales);
+
+  document.getElementById('link-catalogo').href =
+    `https://catalogo.naturalezaabierta.com/?ref=${resumen.codigo_propio}`;
+  document.getElementById('link-creativos').href =
+    `https://creativos.naturalezaabierta.com/?ref=${resumen.codigo_propio}`;
+
+  document.getElementById('arbol-raiz-nombre').textContent = `${resumen.nombre} ${resumen.apellido||''} (tú)`;
+
+  await cargarHistorialPagos();
+}
+
+function formatoMoneda(v){
+  const n = Number(v||0);
+  return '$' + n.toLocaleString('es-VE', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+function formatoFecha(f){
+  if(!f) return '—';
+  const d = new Date(f);
+  return d.toLocaleDateString('es-VE', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+/* ---------- SECCIONES ---------- */
+function cambiarSeccion(sec){
+  document.getElementById('tab-pagos').classList.toggle('activo', sec==='pagos');
+  document.getElementById('tab-arbol').classList.toggle('activo', sec==='arbol');
+  document.getElementById('seccion-pagos').classList.toggle('oculto', sec!=='pagos');
+  document.getElementById('seccion-arbol').classList.toggle('oculto', sec!=='arbol');
+
+  if (sec==='arbol' && document.getElementById('arbol-raiz').children.length===0){
+    cargarNivel(afiliadoActual.usuario_id, document.getElementById('arbol-raiz'));
+  }
+}
+
+/* ---------- HISTORIAL DE PAGOS ---------- */
+async function cargarHistorialPagos(){
+  const { data, error } = await sb.rpc('obtener_historial_pagos_afiliado');
+  const cuerpo = document.getElementById('cuerpo-pagos');
+  const vacio = document.getElementById('pagos-vacio');
+  cuerpo.innerHTML = '';
+
+  if (error || !data || data.length===0){
+    vacio.classList.remove('oculto');
+    return;
+  }
+  vacio.classList.add('oculto');
+
+  data.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatoFecha(p.fecha_pago)}</td>
+      <td>${formatoMoneda(p.monto_total)}</td>
+      <td>${p.metodo_pago||'—'}</td>
+      <td>${p.referencia_pago||'—'}</td>
+      <td><span class="estado-pago">${p.estado_pago||'Pagado'}</span></td>
+    `;
+    cuerpo.appendChild(tr);
+  });
+}
+
+/* ---------- ÁRBOL CON CARGA DIFERIDA ---------- */
+async function cargarNivel(usuarioIdPadre, contenedorUl){
+  contenedorUl.innerHTML = `<li class="cargando-mini">Cargando...</li>`;
+
+  const { data, error } = await sb.rpc('obtener_hijos_arbol', { p_padre_usuario_id: usuarioIdPadre });
+
+  if (error || !data || data.length===0){
+    contenedorUl.innerHTML = `<li class="cargando-mini">Sin referidos en este nivel todavía.</li>`;
+    return;
+  }
+
+  contenedorUl.innerHTML = '';
+  data.forEach(hijo => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="fila-nodo">
+        <div class="izq">
+          <button class="btn-expandir" title="Ver su red">+</button>
+          <span class="punto-compra ${hijo.ha_comprado ? '' : 'no'}" title="${hijo.ha_comprado ? 'Ya compró' : 'Aún no compra'}"></span>
+          <span>${hijo.nombre} ${hijo.apellido||''}</span>
+        </div>
+        <span class="monto-nodo">${formatoMoneda(hijo.monto_generado)}</span>
+      </div>
+      <ul class="oculto"></ul>
+    `;
+    const btn = li.querySelector('.btn-expandir');
+    const subUl = li.querySelector('ul');
+    let expandido = false;
+
+    btn.addEventListener('click', async () => {
+      if (!expandido){
+        subUl.classList.remove('oculto');
+        btn.textContent = '–';
+        expandido = true;
+        await cargarNivel(hijo.usuario_id, subUl);
+      } else {
+        subUl.classList.add('oculto');
+        btn.textContent = '+';
+        expandido = false;
+      }
+    });
+
+    contenedorUl.appendChild(li);
+  });
+}
+
+/* ---------- SESIÓN YA ACTIVA AL CARGAR ---------- */
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await iniciarApp();
+})();
+</script>
+
+</body>
+</html>
