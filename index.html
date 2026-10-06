@@ -308,6 +308,15 @@
   .punto-compra.no{ background:#d7d7d7; }
   .monto-nodo{ font-weight:700; color:var(--verde-oscuro); white-space:nowrap; }
   .cargando-mini{ font-size:12.5px; color:var(--texto-suave); padding:6px 4px; }
+  .badge-nivel{
+    background:var(--verde-claro);
+    color:var(--verde-oscuro);
+    font-size:10.5px;
+    font-weight:800;
+    padding:2px 7px;
+    border-radius:20px;
+    flex-shrink:0;
+  }
 </style>
 </head>
 <body>
@@ -432,7 +441,7 @@
     <div id="seccion-arbol" class="panel oculto">
       <div class="nodo-raiz">
         <div class="nombre" id="arbol-raiz-nombre">Tú</div>
-        <div class="detalle">Toca el + para ver los referidos de cada persona</div>
+        <div class="detalle">Toca el + para ver los referidos de cada persona (hasta 4 niveles)</div>
       </div>
       <ul class="arbol" id="arbol-raiz"></ul>
     </div>
@@ -444,6 +453,7 @@ const SUPABASE_URL = "https://tgvcvnhrwswuxgjbpvwq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_EKV8OM1y96u-DV_kUPGwkg_BZuGdf4D";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const MAX_NIVELES = 4; // la red paga comisión hasta el nivel 4
 let afiliadoActual = null; // { afiliado_id, usuario_id (root), codigo_propio, ... }
 
 /* ---------- TABS AUTH ---------- */
@@ -652,7 +662,7 @@ async function cargarHistorialPagos(){
 }
 
 /* ---------- ÁRBOL CON CARGA DIFERIDA ---------- */
-async function cargarNivel(usuarioIdPadre, contenedorUl){
+async function cargarNivel(usuarioIdPadre, contenedorUl, nivel = 1){
   contenedorUl.innerHTML = `<li class="cargando-mini">Cargando...</li>`;
 
   const { data, error } = await sb.rpc('obtener_hijos_arbol', { p_padre_usuario_id: usuarioIdPadre });
@@ -668,8 +678,9 @@ async function cargarNivel(usuarioIdPadre, contenedorUl){
     li.innerHTML = `
       <div class="fila-nodo">
         <div class="izq">
-          <button class="btn-expandir" title="Ver su red">+</button>
+          <button class="btn-expandir" title="${nivel >= MAX_NIVELES ? 'Último nivel de tu red' : 'Ver su red'}" ${nivel >= MAX_NIVELES ? 'disabled' : ''}>+</button>
           <span class="punto-compra ${hijo.ha_comprado ? '' : 'no'}" title="${hijo.ha_comprado ? 'Ya compró' : 'Aún no compra'}"></span>
+          <span class="badge-nivel">N${nivel}</span>
           <span>${hijo.nombre} ${hijo.apellido||''}</span>
         </div>
         <span class="monto-nodo">${formatoMoneda(hijo.monto_generado)}</span>
@@ -685,7 +696,7 @@ async function cargarNivel(usuarioIdPadre, contenedorUl){
         subUl.classList.remove('oculto');
         btn.textContent = '–';
         expandido = true;
-        await cargarNivel(hijo.usuario_id, subUl);
+        await cargarNivel(hijo.usuario_id, subUl, nivel + 1);
       } else {
         subUl.classList.add('oculto');
         btn.textContent = '+';
