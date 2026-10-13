@@ -346,6 +346,25 @@
     border-radius:20px;
     flex-shrink:0;
   }
+  /* ===== MOVIL-APP: inicio ===== */
+  html,body{max-width:100%;overflow-x:hidden}
+  #seccion-pagos{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.tabla-pagos{min-width:460px}
+  .tabs-secundarias{overflow-x:auto;white-space:nowrap}
+  .campo input{font-size:16px}
+  header.topbar{padding-top:calc(14px + env(safe-area-inset-top))}
+  main{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  @media(max-width:480px){
+    main{padding:16px 12px 60px}
+    .resumen-header{padding:20px 16px}
+    .cifra{padding:12px}
+    .cifra .valor{font-size:18px}
+    .accesos{grid-template-columns:1fr}
+    .tarjeta-auth{padding:28px 20px}
+    ul.arbol ul{padding-left:10px}
+    .fila-nodo{padding:8px 10px;font-size:13px}
+  }
+/* ===== MOVIL-APP: fin ===== */
 </style>
 </head>
 <body>
