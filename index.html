@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal de Afiliados · Naturaleza Abierta</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -346,6 +347,49 @@
     border-radius:20px;
     flex-shrink:0;
   }
+  /* ===== FINANZAS: inicio ===== */
+  .fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .fin-card{background:var(--blanco);border:1.5px solid var(--borde);border-radius:14px;padding:16px}
+  .fin-card .et{font-size:12px;color:var(--texto-suave);font-weight:600}
+  .fin-card .val{font-size:26px;font-weight:800;color:var(--verde-oscuro);margin-top:2px}
+  .fin-card .sub{font-size:12px;color:var(--texto-suave);margin-top:4px}
+  .fin-card.porpagar{background:#fff8e6;border-color:#f0dca6}
+  .fin-card.porpagar .val{color:#8a5a00}
+  .fin-card.aldia{background:var(--verde-claro);border-color:#bfdcc5}
+  .fin-card.pagado .val{color:var(--verde)}
+  .fin-acciones{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .btn-fin{background:var(--blanco);border:1.5px solid var(--borde);color:var(--verde-oscuro);padding:9px 14px;border-radius:10px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;transition:.15s}
+  .btn-fin:hover{border-color:var(--verde-acento);box-shadow:var(--sombra)}
+  .btn-fin.principal{background:var(--verde);border-color:var(--verde);color:#fff}
+  .btn-fin.principal:hover{background:var(--verde-oscuro)}
+  .fin-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .fin-kpi{background:var(--blanco);border-radius:12px;padding:12px 14px;box-shadow:var(--sombra)}
+  .fin-kpi .et{font-size:11.5px;color:var(--texto-suave);font-weight:600}
+  .fin-kpi .val{font-size:17px;font-weight:800;color:var(--verde-oscuro)}
+  .fin-graficos{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:14px}
+  .graf{background:var(--blanco);border-radius:16px;padding:16px;box-shadow:var(--sombra);min-width:0}
+  .graf h3{font-size:14px;font-weight:800;color:var(--verde-oscuro);margin:0 0 10px}
+  .graf.ancho{grid-column:1/-1}
+  .graf canvas{max-height:260px}
+  .fin-titulo{font-size:15px;font-weight:800;color:var(--verde-oscuro);margin:20px 0 10px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:800;white-space:nowrap}
+  .badge.pagado{background:#e3f4e8;color:#1d6b35}
+  .badge.porpagar{background:#fff4dc;color:#8a5a00}
+  .badge.proceso{background:#e6eefb;color:#2a4f8f}
+  .badge.otro{background:#eee;color:#555}
+  .btn-comp{background:var(--verde-claro);border:none;color:var(--verde-oscuro);padding:5px 10px;border-radius:8px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+  .btn-comp:hover{background:#d3e9d8}
+  .tabla-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .fondo-comp{position:fixed;inset:0;background:rgba(18,33,25,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+  .caja-comp{background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px;text-align:center}
+  .caja-comp img{max-width:100%;max-height:70vh;border-radius:10px}
+  .caja-comp iframe{width:100%;height:70vh;border:0}
+  @media(max-width:700px){
+    .fin-grid,.fin-kpis{grid-template-columns:1fr}
+    .fin-graficos{grid-template-columns:1fr}
+    .fin-card .val{font-size:22px}
+  }
+  /* ===== FINANZAS: fin ===== */
   /* ===== MOVIL-APP: inicio ===== */
   html,body{max-width:100%;overflow-x:hidden}
   #seccion-pagos{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -479,6 +523,7 @@
     <div class="tabs-secundarias">
       <button id="tab-pagos" class="activo" onclick="cambiarSeccion('pagos')">Historial de pagos</button>
       <button id="tab-arbol" onclick="cambiarSeccion('arbol')">Mi red (árbol genealógico)</button>
+      <button id="tab-finanzas" onclick="cambiarSeccion('finanzas')">📊 Mis finanzas</button>
     </div>
 
     <!-- SECCIÓN PAGOS -->
@@ -500,7 +545,20 @@
       </div>
       <ul class="arbol" id="arbol-raiz"></ul>
     </div>
+
+    <!-- SECCIÓN MIS FINANZAS -->
+    <div id="seccion-finanzas" class="oculto">
+      <div id="fin-contenido"></div>
+    </div>
   </main>
+</div>
+
+<!-- Visor de comprobante -->
+<div id="fondo-comp" class="fondo-comp oculto" onclick="if(event.target===this)cerrarComprobante()">
+  <div class="caja-comp">
+    <div id="comp-cuerpo"></div>
+    <button class="btn-fin" style="margin-top:12px" onclick="cerrarComprobante()">Cerrar</button>
+  </div>
 </div>
 
 <script>
@@ -718,6 +776,9 @@ function cambiarSeccion(sec){
   document.getElementById('tab-arbol').classList.toggle('activo', sec==='arbol');
   document.getElementById('seccion-pagos').classList.toggle('oculto', sec!=='pagos');
   document.getElementById('seccion-arbol').classList.toggle('oculto', sec!=='arbol');
+  document.getElementById('tab-finanzas').classList.toggle('activo', sec==='finanzas');
+  document.getElementById('seccion-finanzas').classList.toggle('oculto', sec!=='finanzas');
+  if (sec==='finanzas') cargarFinanzas();
 
   if (sec==='arbol' && document.getElementById('arbol-raiz').children.length===0){
     cargarNivel(afiliadoActual.usuario_id, document.getElementById('arbol-raiz'));
@@ -795,6 +856,257 @@ async function cargarNivel(usuarioIdPadre, contenedorUl, nivel = 1){
 
     contenedorUl.appendChild(li);
   });
+}
+
+/* ---------- MIS FINANZAS ---------- */
+let finCargado = false, finDatos = null, finNiveles = [], graficosFin = [];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const sumaN = (arr, k) => (arr || []).reduce((s, x) => s + Number(x[k] || 0), 0);
+
+function etiquetaMes(clave){
+  const [a, m] = clave.split('-').map(Number);
+  return new Date(a, m - 1, 1).toLocaleDateString('es-VE', { month:'short', year:'2-digit' });
+}
+function ultimos12(){
+  const o = [], h = new Date();
+  for (let i = 11; i >= 0; i--){
+    const d = new Date(h.getFullYear(), h.getMonth() - i, 1);
+    o.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+  }
+  return o;
+}
+function badgeComision(e){
+  const v = String(e || '').toLowerCase();
+  if (/pagad/.test(v)) return '<span class="badge pagado">PAGADO ✓</span>';
+  if (/lote/.test(v)) return '<span class="badge proceso">En proceso de pago</span>';
+  if (/pend/.test(v)) return '<span class="badge porpagar">Por pagar</span>';
+  return `<span class="badge otro">${esc(e || '—')}</span>`;
+}
+function badgePago(e){
+  return /pagad/i.test(e || '')
+    ? '<span class="badge pagado">PAGADO ✓</span>'
+    : '<span class="badge porpagar">Por pagar</span>';
+}
+
+async function cargarFinanzas(forzar){
+  if (finCargado && !forzar) return;
+  const cont = document.getElementById('fin-contenido');
+  cont.innerHTML = '<div class="cargando-mini">Cargando tus finanzas…</div>';
+  const [r1, r2] = await Promise.all([
+    sb.rpc('obtener_finanzas_afiliado'),
+    sb.rpc('obtener_ganancias_por_nivel')
+  ]);
+  if (r1.error || !r1.data){
+    cont.innerHTML = '<div class="panel vacio">No pudimos cargar tus finanzas en este momento. Intenta de nuevo en un rato.</div>';
+    return;
+  }
+  finDatos = r1.data;
+  finNiveles = r2.data || [];
+  finCargado = true;
+  pintarFinanzas();
+}
+
+function pintarFinanzas(){
+  const cont = document.getElementById('fin-contenido');
+  const d = finDatos;
+  const porPagar = sumaN(finNiveles, 'por_pagar');
+  const pagado = sumaN(finNiveles, 'pagado');
+  const espera = sumaN(finNiveles, 'retenido');
+  const ganado = sumaN(finNiveles, 'ganado_total');
+
+  const meses = ultimos12();
+  const mapa = Object.fromEntries((d.por_mes || []).map(x => [x.mes, x]));
+  const gen = meses.map(m => Number(mapa[m]?.generado || 0));
+  const cob = meses.map(m => Number(mapa[m]?.pagado || 0));
+  let acum = 0;
+  const acumulado = gen.map(v => (acum += v));
+  const mesesActivos = gen.filter(v => v > 0).length;
+  const mejor = Math.max(...gen);
+  const mejorMes = mejor > 0 ? etiquetaMes(meses[gen.indexOf(mejor)]) : '—';
+  const promedio = mesesActivos ? gen.reduce((a, b) => a + b, 0) / mesesActivos : 0;
+  const pctCobrado = ganado > 0 ? Math.round((pagado / ganado) * 100) : 0;
+
+  const pagos = d.pagos || [];
+  const movs = d.movimientos || [];
+
+  const tarjetaPorPagar = porPagar > 0
+    ? `<div class="fin-card porpagar"><div class="et">Por pagar</div><div class="val">${formatoMoneda(porPagar)}</div><div class="sub">Se te paga en el próximo corte</div></div>`
+    : `<div class="fin-card aldia"><div class="et">Por pagar</div><div class="val">$0.00</div><div class="sub">✓ Estás al día</div></div>`;
+
+  cont.innerHTML = `
+    <div class="fin-grid">
+      ${tarjetaPorPagar}
+      <div class="fin-card pagado"><div class="et">Pagado a la fecha</div><div class="val">${formatoMoneda(pagado)}</div><div class="sub"><span class="badge pagado">PAGADO ✓</span></div></div>
+      <div class="fin-card"><div class="et">En espera</div><div class="val">${formatoMoneda(espera)}</div><div class="sub">Reservas con abono, aún sin liberar</div></div>
+    </div>
+
+    <div class="fin-acciones">
+      <button class="btn-fin principal" onclick="descargarEstadoCuenta()">⬇️ Estado de cuenta (PDF)</button>
+      <button class="btn-fin" onclick="descargarCSV()">📄 Descargar Excel (CSV)</button>
+    </div>
+
+    <div class="fin-kpis">
+      <div class="fin-kpi"><div class="et">Total ganado</div><div class="val">${formatoMoneda(ganado)}</div></div>
+      <div class="fin-kpi"><div class="et">Mejor mes</div><div class="val">${mejor > 0 ? formatoMoneda(mejor) + ' · ' + esc(mejorMes) : '—'}</div></div>
+      <div class="fin-kpi"><div class="et">Promedio por mes activo · ya cobrado</div><div class="val">${formatoMoneda(promedio)} · ${pctCobrado}%</div></div>
+    </div>
+
+    <div class="fin-graficos">
+      <div class="graf"><h3>Ganancias por mes</h3><canvas id="g-mes"></canvas></div>
+      <div class="graf"><h3>De dónde vienen tus ganancias</h3><canvas id="g-nivel"></canvas></div>
+      <div class="graf ancho"><h3>Crecimiento acumulado (últimos 12 meses)</h3><canvas id="g-acum"></canvas></div>
+    </div>
+
+    <div class="fin-titulo">Mis pagos</div>
+    <div class="panel tabla-scroll">
+      ${pagos.length ? `
+      <table class="tabla-pagos" style="min-width:560px">
+        <thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Referencia</th><th>Estado</th><th>Comprobante</th></tr></thead>
+        <tbody>
+          ${pagos.map(p => `<tr>
+            <td>${formatoFecha(p.fecha_pago || p.fecha_lote)}</td>
+            <td><strong>${formatoMoneda(p.monto)}</strong></td>
+            <td>${esc(p.metodo || '—')}</td>
+            <td>${esc(p.referencia || '—')}</td>
+            <td>${badgePago(p.estado)}</td>
+            <td>${p.comprobante_path
+              ? `<button class="btn-comp" onclick="verComprobante('${esc(p.comprobante_path)}')">📎 Ver comprobante</button>`
+              : (/pagad/i.test(p.estado || '') ? '<span style="color:var(--texto-suave);font-size:12px">En camino</span>' : '—')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<div class="vacio">Todavía no tienes pagos registrados.</div>'}
+    </div>
+
+    <div class="fin-titulo">Detalle de mis comisiones</div>
+    <div class="panel tabla-scroll">
+      ${movs.length ? `
+      <table class="tabla-pagos" style="min-width:560px">
+        <thead><tr><th>Fecha</th><th>Compra</th><th>Nivel</th><th>Venta</th><th>Comisión</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${movs.map(m => `<tr>
+            <td>${formatoFecha(m.fecha)}</td>
+            <td>${esc(m.compra_id || '—')}</td>
+            <td>N${esc(m.nivel)}</td>
+            <td>${formatoMoneda(m.monto_venta)}</td>
+            <td><strong>${formatoMoneda(m.monto)}</strong></td>
+            <td>${badgeComision(m.estado)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<div class="vacio">Aún no tienes comisiones generadas. ¡Comparte tu catálogo!</div>'}
+    </div>
+  `;
+
+  graficosFin.forEach(g => g.destroy());
+  graficosFin = [];
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  const etqs = meses.map(etiquetaMes);
+
+  graficosFin.push(new Chart(document.getElementById('g-mes'), {
+    type: 'bar',
+    data: { labels: etqs, datasets: [
+      { label: 'Generado', data: gen, backgroundColor: '#3f9553', borderRadius: 5 },
+      { label: 'Cobrado', data: cob, backgroundColor: '#d49741', borderRadius: 5 }
+    ]},
+    options: { scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v } } }, plugins: { legend: { position: 'bottom' } } }
+  }));
+
+  const nivelesOrden = [...finNiveles].sort((a, b) => a.nivel - b.nivel);
+  graficosFin.push(new Chart(document.getElementById('g-nivel'), {
+    type: 'doughnut',
+    data: {
+      labels: nivelesOrden.map(n => 'Nivel ' + n.nivel),
+      datasets: [{ data: nivelesOrden.map(n => Number(n.ganado_total || 0)), backgroundColor: ['#1f3d2b', '#3f9553', '#d49741', '#9bb8a2'], borderWidth: 0 }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '62%' }
+  }));
+
+  graficosFin.push(new Chart(document.getElementById('g-acum'), {
+    type: 'line',
+    data: { labels: etqs, datasets: [{ label: 'Ganado acumulado', data: acumulado, borderColor: '#2f6b3f', backgroundColor: 'rgba(63,149,83,0.12)', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v } } } }
+  }));
+}
+
+/* ---------- COMPROBANTE ---------- */
+async function verComprobante(path){
+  const fondo = document.getElementById('fondo-comp');
+  const cuerpo = document.getElementById('comp-cuerpo');
+  cuerpo.innerHTML = '<div class="cargando-mini">Abriendo comprobante…</div>';
+  fondo.classList.remove('oculto');
+  const { data, error } = await sb.storage.from('comprobantes').createSignedUrl(path, 300);
+  if (error || !data){
+    cuerpo.innerHTML = '<div class="vacio">No se pudo abrir el comprobante.</div>';
+    return;
+  }
+  cuerpo.innerHTML = /\.pdf$/i.test(path)
+    ? `<iframe src="${data.signedUrl}"></iframe>`
+    : `<img src="${data.signedUrl}" alt="Comprobante de pago">`;
+}
+function cerrarComprobante(){
+  document.getElementById('fondo-comp').classList.add('oculto');
+  document.getElementById('comp-cuerpo').innerHTML = '';
+}
+
+/* ---------- DESCARGAS ---------- */
+function descargarCSV(){
+  if (!finDatos) return;
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const f = (x) => x ? new Date(x).toISOString().slice(0, 10) : '';
+  const filas = [
+    ['Estado de cuenta', (afiliadoActual.nombre || '') + ' ' + (afiliadoActual.apellido || ''), afiliadoActual.codigo_propio],
+    ['Generado el', new Date().toISOString().slice(0, 10)],
+    [],
+    ['RESUMEN (USD)'],
+    ['Total ganado', sumaN(finNiveles, 'ganado_total').toFixed(2)],
+    ['Pagado', sumaN(finNiveles, 'pagado').toFixed(2)],
+    ['Por pagar', sumaN(finNiveles, 'por_pagar').toFixed(2)],
+    ['En espera', sumaN(finNiveles, 'retenido').toFixed(2)],
+    [],
+    ['PAGOS'], ['Fecha', 'Monto', 'Método', 'Referencia', 'Estado'],
+    ...(finDatos.pagos || []).map(p => [f(p.fecha_pago || p.fecha_lote), Number(p.monto || 0).toFixed(2), p.metodo || '', p.referencia || '', p.estado || '']),
+    [],
+    ['COMISIONES'], ['Fecha', 'Compra', 'Nivel', 'Venta', 'Comisión', 'Estado'],
+    ...(finDatos.movimientos || []).map(m => [f(m.fecha), m.compra_id || '', m.nivel, Number(m.monto_venta || 0).toFixed(2), Number(m.monto || 0).toFixed(2), m.estado || ''])
+  ];
+  const csv = '﻿' + filas.map(r => r.map(q).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'estado-de-cuenta-' + (afiliadoActual.codigo_propio || 'afiliado') + '.csv';
+  a.click();
+}
+
+function descargarEstadoCuenta(){
+  if (!finDatos) return;
+  const porPagar = sumaN(finNiveles, 'por_pagar'), pagado = sumaN(finNiveles, 'pagado');
+  const espera = sumaN(finNiveles, 'retenido'), ganado = sumaN(finNiveles, 'ganado_total');
+  const nombre = esc((afiliadoActual.nombre || '') + ' ' + (afiliadoActual.apellido || ''));
+  const hoy = new Date().toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' });
+  const filasPagos = (finDatos.pagos || []).map(p => `<tr><td>${formatoFecha(p.fecha_pago || p.fecha_lote)}</td><td>${formatoMoneda(p.monto)}</td><td>${esc(p.metodo || '—')}</td><td>${esc(p.referencia || '—')}</td><td>${/pagad/i.test(p.estado || '') ? 'PAGADO' : 'Por pagar'}</td></tr>`).join('') || '<tr><td colspan="5">Sin pagos registrados</td></tr>';
+  const filasMovs = (finDatos.movimientos || []).map(m => `<tr><td>${formatoFecha(m.fecha)}</td><td>${esc(m.compra_id || '—')}</td><td>N${esc(m.nivel)}</td><td>${formatoMoneda(m.monto_venta)}</td><td>${formatoMoneda(m.monto)}</td><td>${esc(m.estado || '—')}</td></tr>`).join('') || '<tr><td colspan="6">Sin comisiones</td></tr>';
+  const w = window.open('', '_blank');
+  if (!w){ alert('Tu navegador bloqueó la ventana. Permite ventanas emergentes para descargar el PDF.'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Estado de cuenta - ${nombre}</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;color:#20291f;margin:32px;font-size:13px}
+    .cab{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #2f6b3f;padding-bottom:12px;margin-bottom:18px}
+    .cab img{height:54px} h1{font-size:20px;margin:0;color:#1f3d2b} .sub{color:#5b6a5c;font-size:12px}
+    .res{display:flex;gap:10px;margin:14px 0 20px}.res div{flex:1;border:1px solid #dbe6dc;border-radius:8px;padding:10px}
+    .res b{display:block;font-size:17px;color:#1f3d2b}.res .pp{background:#fff8e6}
+    h2{font-size:14px;color:#1f3d2b;margin:22px 0 6px}
+    table{width:100%;border-collapse:collapse}th{text-align:left;background:#e8f3ea;padding:6px;font-size:11.5px}
+    td{padding:6px;border-bottom:1px solid #dbe6dc;font-size:12px}
+    .pie{margin-top:26px;font-size:11px;color:#5b6a5c}
+    @media print{body{margin:14px}}
+  </style></head><body>
+  <div class="cab"><div><h1>Estado de cuenta</h1><div class="sub">${nombre} · Código ${esc(afiliadoActual.codigo_propio || '')}<br>Emitido el ${hoy}</div></div>
+  <img src="https://www.naturalezaabierta.com/wp-content/uploads/2026/03/cropped-cropped-solo-logo-WEB2.png" alt="Naturaleza Abierta"></div>
+  <div class="res"><div>Total ganado<b>${formatoMoneda(ganado)}</b></div><div>Pagado<b>${formatoMoneda(pagado)}</b></div><div class="pp">Por pagar<b>${formatoMoneda(porPagar)}</b></div><div>En espera<b>${formatoMoneda(espera)}</b></div></div>
+  <h2>Pagos recibidos</h2><table><thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Referencia</th><th>Estado</th></tr></thead><tbody>${filasPagos}</tbody></table>
+  <h2>Detalle de comisiones</h2><table><thead><tr><th>Fecha</th><th>Compra</th><th>Nivel</th><th>Venta</th><th>Comisión</th><th>Estado</th></tr></thead><tbody>${filasMovs}</tbody></table>
+  <div class="pie">Montos en USD. Documento generado desde el Portal de Afiliados de Naturaleza Abierta.</div>
+  <script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>`);
+  w.document.close();
 }
 
 /* ---------- SESIÓN YA ACTIVA AL CARGAR ---------- */
