@@ -437,6 +437,7 @@
         <input type="password" id="login-clave" required placeholder="••••••••">
       </div>
       <button class="btn-principal" type="submit" id="btn-login">Entrar</button>
+      <a href="#" onclick="mostrarOlvido();return false" style="display:block;text-align:center;margin-top:14px;font-size:13px;font-weight:600;color:var(--verde)">¿Olvidaste tu contraseña?</a>
     </form>
 
     <!-- REGISTRO: PASO 1 (pedir código por WhatsApp) -->
@@ -464,6 +465,18 @@
       </div>
       <button class="btn-principal" type="submit" id="btn-registro">Activar mi cuenta</button>
       <button type="button" class="btn-salir" style="width:100%;margin-top:10px;" onclick="volverAPaso1()">‹ Cambiar teléfono / reenviar código</button>
+    </form>
+
+    <form id="form-olvido" class="form-auth oculto" onsubmit="return manejarOlvido(event)">
+      <p style="font-size:13.5px;color:var(--texto-suave);margin:0 0 14px">Escribe tu correo y te enviamos un enlace para crear una contraseña nueva.</p>
+      <div class="campo"><label>Correo</label><input type="email" id="olvido-correo" required placeholder="tucorreo@ejemplo.com"></div>
+      <button class="btn-principal" type="submit" id="btn-olvido">Enviarme el enlace</button>
+      <button type="button" class="btn-salir" style="width:100%;margin-top:10px;" onclick="volverLogin()">‹ Volver a iniciar sesión</button>
+    </form>
+    <form id="form-nueva-clave" class="form-auth oculto" onsubmit="return manejarNuevaClave(event)">
+      <div class="campo"><label>Nueva contraseña</label><input type="password" id="nueva-clave" required minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+      <div class="campo"><label>Repite la contraseña</label><input type="password" id="nueva-clave2" required minlength="8" autocomplete="new-password"></div>
+      <button class="btn-principal" type="submit" id="btn-nueva-clave">Guardar contraseña</button>
     </form>
 
     <div id="mensaje-auth"></div>
@@ -689,6 +702,68 @@ async function manejarRegistro(e){
   setTimeout(() => iniciarApp(), 900);
   return false;
 }
+/* ---------- OLVIDÉ MI CONTRASEÑA ---------- */
+const FORMS_AUTH = ['form-login','form-registro-paso1','form-registro-paso2','form-olvido','form-nueva-clave'];
+function verFormAuth(id){ FORMS_AUTH.forEach(f => document.getElementById(f).classList.toggle('oculto', f !== id)); }
+function mostrarOlvido(){
+  document.getElementById('olvido-correo').value = document.getElementById('login-correo').value.trim();
+  verFormAuth('form-olvido');
+  document.getElementById('mensaje-auth').innerHTML = '';
+}
+function volverLogin(){ verFormAuth('form-login'); document.getElementById('mensaje-auth').innerHTML = ''; }
+
+async function manejarOlvido(e){
+  e.preventDefault();
+  const btn = document.getElementById('btn-olvido');
+  const correo = document.getElementById('olvido-correo').value.trim().toLowerCase();
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try{
+    const r = await fetch(SUPABASE_URL + '/functions/v1/recuperar-clave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ correo })
+    });
+    if(!r.ok) throw new Error('http');
+    mostrarMensajeAuth('Si ese correo está registrado, te enviamos un enlace para crear una contraseña nueva. Revisa también tu carpeta de spam.', 'ok');
+  }catch(_){
+    mostrarMensajeAuth('No pudimos enviar el correo. Inténtalo de nuevo en un momento.', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Enviarme el enlace';
+  return false;
+}
+
+async function manejarNuevaClave(e){
+  e.preventDefault();
+  const c1 = document.getElementById('nueva-clave').value;
+  const c2 = document.getElementById('nueva-clave2').value;
+  if(c1.length < 8){ mostrarMensajeAuth('La contraseña debe tener mínimo 8 caracteres.', 'error'); return false; }
+  if(c1 !== c2){ mostrarMensajeAuth('Las contraseñas no coinciden.', 'error'); return false; }
+  const btn = document.getElementById('btn-nueva-clave');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error } = await sb.auth.updateUser({ password: c1 });
+  btn.disabled = false; btn.textContent = 'Guardar contraseña';
+  if(error){ mostrarMensajeAuth('No se pudo guardar la contraseña: ' + error.message, 'error'); return false; }
+  mostrarMensajeAuth('¡Listo! Contraseña actualizada. Entrando...', 'ok');
+  setTimeout(() => iniciarApp(), 900);
+  return false;
+}
+
+// Si la persona llegó desde el enlace del correo, mostrar la pantalla de contraseña nueva
+async function procesarEnlaceRecuperacion(){
+  const p = new URLSearchParams(location.search);
+  const th = p.get('token_hash');
+  if(!th || p.get('type') !== 'recovery') return false;
+  history.replaceState(null, '', location.pathname);
+  const { error } = await sb.auth.verifyOtp({ token_hash: th, type: 'recovery' });
+  if(error){
+    verFormAuth('form-olvido');
+    mostrarMensajeAuth('Ese enlace ya se usó o venció. Pide uno nuevo aquí abajo.', 'error');
+    return true;
+  }
+  verFormAuth('form-nueva-clave');
+  mostrarMensajeAuth('Escribe tu nueva contraseña.', 'ok');
+  return true;
+}  
 
 function cerrarSesion(){
   sb.auth.signOut().then(() => location.reload());
@@ -1111,6 +1186,7 @@ function descargarEstadoCuenta(){
 
 /* ---------- SESIÓN YA ACTIVA AL CARGAR ---------- */
 (async () => {
+  if (await procesarEnlaceRecuperacion()) return;
   const { data: { session } } = await sb.auth.getSession();
   if (session) await iniciarApp();
 })();
