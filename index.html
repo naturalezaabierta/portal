@@ -408,6 +408,18 @@
     ul.arbol ul{padding-left:10px}
     .fila-nodo{padding:8px 10px;font-size:13px}
   }
+
+.tx-corto{display:none}
+.tabs-secundarias .ic{margin-right:6px}
+@media(max-width:700px){
+  .tabs-secundarias{position:fixed;left:0;right:0;bottom:0;z-index:50;margin:0;gap:4px;background:#fff;border-top:1px solid var(--borde);border-bottom:none;box-shadow:0 -4px 16px rgba(31,61,43,.10);padding:6px 8px calc(6px + env(safe-area-inset-bottom));overflow:visible;white-space:normal}
+  .tabs-secundarias button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;padding:7px 2px;border:none;border-radius:12px;font-size:11.5px;font-weight:700;color:var(--texto-suave)}
+  .tabs-secundarias button .ic{margin:0;font-size:23px;line-height:1}
+  .tabs-secundarias button.activo{background:var(--verde-claro);color:var(--verde-oscuro);border:none}
+  .tx-largo{display:none}
+  .tx-corto{display:inline}
+  main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+}
 /* ===== MOVIL-APP: fin ===== */
 </style>
 </head>
@@ -534,9 +546,9 @@
     </div>
 
     <div class="tabs-secundarias">
-      <button id="tab-pagos" class="activo" onclick="cambiarSeccion('pagos')">Historial de pagos</button>
-      <button id="tab-arbol" onclick="cambiarSeccion('arbol')">Mi red (árbol genealógico)</button>
-      <button id="tab-finanzas" onclick="cambiarSeccion('finanzas')">📊 Mis finanzas</button>
+      <button id="tab-pagos" class="activo" onclick="cambiarSeccion('pagos')"><span class="ic">💳</span><span class="tx-largo">Historial de pagos</span><span class="tx-corto">Pagos</span></button>
+      <button id="tab-arbol" onclick="cambiarSeccion('arbol')"><span class="ic">🌳</span><span class="tx-largo">Mi red (árbol genealógico)</span><span class="tx-corto">Mi red</span></button>
+      <button id="tab-finanzas" onclick="cambiarSeccion('finanzas')"><span class="ic">📊</span><span class="tx-largo">Mis finanzas</span><span class="tx-corto">Finanzas</span></button>
     </div>
 
     <!-- SECCIÓN PAGOS -->
@@ -854,6 +866,7 @@ function cambiarSeccion(sec){
   document.getElementById('tab-finanzas').classList.toggle('activo', sec==='finanzas');
   document.getElementById('seccion-finanzas').classList.toggle('oculto', sec!=='finanzas');
   if (sec==='finanzas') cargarFinanzas();
+  window.scrollTo({ top: 0 });
 
   if (sec==='arbol' && document.getElementById('arbol-raiz').children.length===0){
     cargarNivel(afiliadoActual.usuario_id, document.getElementById('arbol-raiz'));
