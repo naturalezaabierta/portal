@@ -627,7 +627,14 @@ async function manejarLogin(e){
   btn.disabled = false; btn.textContent = 'Entrar';
 
   if (error){
-    mostrarMensajeAuth('Correo o contraseña incorrectos.', 'error');
+    const m = String(error.message || '').toLowerCase();
+    let txt;
+    if (error.status === 429) txt = 'Demasiados intentos seguidos. Espera unos minutos y vuelve a intentar.';
+    else if (m.includes('email not confirmed')) txt = 'Tu correo aún no está confirmado. Revisa tu bandeja de entrada (y spam).';
+    else if (error.status === 400 || m.includes('invalid login')) txt = 'El correo y la contraseña no coinciden. Revisa que estén bien escritos o toca «¿Olvidaste tu contraseña?».';
+    else if (!error.status || m.includes('fetch') || m.includes('network')) txt = 'No pudimos conectar con el servidor. Revisa tu internet, o intenta con datos móviles.';
+    else txt = 'No pudimos iniciar sesión (' + error.message + ').';
+    mostrarMensajeAuth(txt, 'error');
     return false;
   }
   await iniciarApp();
@@ -718,7 +725,7 @@ async function manejarRegistro(e){
 const FORMS_AUTH = ['form-login','form-registro-paso1','form-registro-paso2','form-olvido','form-nueva-clave'];
 function verFormAuth(id){ FORMS_AUTH.forEach(f => document.getElementById(f).classList.toggle('oculto', f !== id)); }
 function mostrarOlvido(){
-  document.getElementById('olvido-correo').value = document.getElementById('login-correo').value.trim();
+  document.getElementById('olvido-correo').value = document.getElementById('login-correo').value.trim().toLowerCase();
   verFormAuth('form-olvido');
   document.getElementById('mensaje-auth').innerHTML = '';
 }
