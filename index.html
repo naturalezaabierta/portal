@@ -543,6 +543,13 @@
           <div class="sub">Imágenes listas para tus redes</div>
         </div>
       </a>
+      <a class="acceso" id="link-chococalma" target="_blank" rel="noopener" style="grid-column:1/-1">
+        <div class="icono">🍫</div>
+        <div>
+          <div class="titulo">Mi Choco Calma</div>
+          <div class="sub">Compártelo, ya trae tu código</div>
+        </div>
+      </a>
     </div>
 
     <div class="tabs-secundarias">
@@ -813,6 +820,8 @@ async function iniciarApp(){
     `https://catalogo.naturalezaabierta.com/?ref=${resumen.codigo_propio}`;
   document.getElementById('link-creativos').href =
     `https://creativos.naturalezaabierta.com/?ref=${resumen.codigo_propio}`;
+  document.getElementById('link-chococalma').href =
+    `https://chococalma.naturalezaabierta.com/?ref=${resumen.codigo_propio}`;
 
   document.getElementById('arbol-raiz-nombre').textContent = `${resumen.nombre} ${resumen.apellido||''} (tú)`;
 
